@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b2545">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Financeiro | Mini Forge 64</title>
+  <link rel="stylesheet" href="financeiro.css">
+  <script defer src="config.js"></script>
+  <script type="module" src="financeiro.js"></script>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" aria-label="Menu de administração">
+    <a href="index.html" class="logo"><span class="logo-mark">64</span><span><strong>MINI FORGE 64</strong><small>Gestão de pedidos</small></span></a>
+    <p class="menu-label">ADMINISTRAÇÃO</p>
+    <nav class="menu">
+      <a href="index.html">▤ &nbsp; Pedidos e clientes</a>
+      <a href="financeiro.html" class="current" aria-current="page">◉ &nbsp; Financeiro</a>
+      <a href="acessos.html">↗ &nbsp; Portal dos clientes</a>
+    </nav>
+    <div class="sidebar-note"><span class="online-dot"></span> Banco Supabase<br><small>Área exclusiva da administração</small></div>
+  </aside>
+  <main class="main">
+    <header class="top"><div><span class="eyebrow">MINI FORGE 64 · ADMINISTRAÇÃO</span><h1>Controle financeiro</h1><p class="subtitle">Sinais, parcelas, quitações e saldo a receber por encomenda.</p></div><a class="top-link" href="index.html">Voltar aos pedidos</a></header>
+    <div class="notice hidden" id="notice" role="alert"></div>
+    <section id="auth-box" class="auth-box hidden" aria-live="polite"><h2>Entre na sua conta</h2><p>O financeiro usa a mesma conta do Gestor de Pedidos. Faça login no gestor e volte para esta página.</p><a href="index.html" class="btn primary">Ir para o login</a></section>
+    <section id="app" class="hidden">
+      <div class="toolbar"><span id="account-label" class="account"></span><div class="toolbar-actions"><button type="button" id="refresh" class="btn secondary">⟳ Atualizar</button><button type="button" id="export-csv" class="btn secondary">↓ CSV</button><button type="button" id="export-backup" class="btn secondary">↓ Backup financeiro</button></div></div>
+      <div class="metrics">
+        <article class="metric"><span>Valor dos pedidos ativos</span><strong id="metric-orders">—</strong><small>Exclui pedidos cancelados</small></article>
+        <article class="metric"><span>Recebido nos pedidos ativos</span><strong id="metric-received">—</strong><small>Recebimentos válidos</small></article>
+        <article class="metric"><span>Saldo a receber</span><strong id="metric-due">—</strong><small>Total ainda não pago</small></article>
+        <article class="metric"><span>Pedidos parcialmente pagos</span><strong id="metric-partial">—</strong><small>Com pelo menos um recebimento</small></article>
+      </div>
+      <div class="cancel-warning hidden" id="cancel-warning"></div>
+      <section class="panel"><div class="panel-header"><div><h2>Pagamentos por pedido</h2><p>O saldo é calculado automaticamente a partir dos recebimentos registrados.</p></div><span class="pill" id="record-count">0 pedidos</span></div>
+        <div class="filters"><label class="search"><span>⌕</span><input id="search" type="search" placeholder="Buscar cliente, item ou número do pedido" aria-label="Buscar pedidos"></label><select id="filter" aria-label="Situação financeira"><option value="all">Todas as situações</option><option value="open">Sem pagamento</option><option value="partial">Parcialmente pago</option><option value="paid">Pago</option><option value="cancelled">Cancelados</option></select><select id="sort" aria-label="Ordenar por data"><option value="new">Mais recentes primeiro</option><option value="old">Mais antigos primeiro</option></select></div>
+        <p class="mobile-hint">Deslize a tabela para o lado para ver todas as colunas e ações.</p><div class="table-scroll" tabindex="0" aria-label="Tabela financeira com rolagem horizontal"><table><thead><tr><th>Pedido / data</th><th>Cliente</th><th>Total</th><th>Recebido</th><th>Saldo</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="orders-body"></tbody></table></div><p class="empty hidden" id="empty">Nenhum pedido encontrado para este filtro.</p>
+      </section>
+      <p class="help">Os recebimentos são internos: não aparecem no portal público dos clientes. Pagamento registrado não confirma automaticamente o recebimento bancário — faça a conferência no extrato.</p>
+    </section>
+  </main>
+</div>
+<div class="backdrop hidden" id="payment-dialog" role="presentation"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pay-title"><div class="dialog-top"><div><span class="eyebrow">REGISTRAR RECEBIMENTO</span><h2 id="pay-title">Novo pagamento</h2></div><button type="button" class="close" data-close="payment-dialog" aria-label="Fechar">×</button></div><div class="order-context" id="pay-context"></div>
+<form id="payment-form"><input type="hidden" name="pedido_id" id="pay-order"><div class="field-grid"><label>Tipo de pagamento<select required id="pay-type" name="tipo"><option>Sinal</option><option>Parcela</option><option>Quitação</option></select></label><label>Data do recebimento<input type="date" name="data_recebimento" id="pay-date" required></label><label>Valor recebido (R$)<input type="number" name="valor" id="pay-amount" min="0.01" step="0.01" required inputmode="decimal"></label><label>Forma de pagamento<select name="forma_pagamento" id="pay-method"><option>Pix</option><option>Dinheiro</option><option>Cartão de crédito</option><option>Cartão de débito</option><option>Transferência</option><option>Outro</option></select></label></div><label class="full-field">Observações (opcional)<textarea id="pay-notes" name="observacoes" maxlength="500" rows="2" placeholder="Ex.: sinal de 50% confirmado no extrato"></textarea></label><p class="form-error hidden" role="alert" id="pay-error"></p><div class="dialog-actions"><button class="btn secondary" type="button" data-close="payment-dialog">Cancelar</button><button class="btn primary" id="pay-submit" type="submit">Registrar pagamento</button></div></form></div></div>
+<div class="backdrop hidden" id="history-dialog" role="presentation"><div class="dialog dialog-wide" role="dialog" aria-modal="true" aria-labelledby="history-title"><div class="dialog-top"><div><span class="eyebrow">HISTÓRICO FINANCEIRO</span><h2 id="history-title">Recebimentos do pedido</h2></div><button type="button" class="close" data-close="history-dialog" aria-label="Fechar">×</button></div><div id="history-context" class="order-context"></div><div class="table-scroll"><table><thead><tr><th>Data</th><th>Tipo</th><th>Forma</th><th>Valor</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="history-body"></tbody></table></div><p id="history-empty" class="empty hidden">Ainda não existem pagamentos registrados.</p><div class="dialog-actions"><button class="btn secondary" type="button" data-close="history-dialog">Fechar</button></div></div></div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+</body>
+</html>
