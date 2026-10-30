@@ -1,4 +1,4 @@
-/* Gestor de Pedidos - funciona localmente ou com Supabase + login. */
+/* Gestor de Pedidos v2 - múltiplos itens por pedido; local e Supabase. */
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
@@ -14,6 +14,58 @@
   const uid = () => (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
   const formatDate = (date) => date ? new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR') : '—';
+
+  // Pedidos antigos não possuem a coluna 'itens': representá-los como um único item.
+  const MAX_ITEMS = 100;
+  const getItems = (order) => (Array.isArray(order?.itens) && order.itens.length ? order.itens : [{ descricao: order?.descricao || 'Item do pedido', quantidade: 1, valor_unitario: Number(order?.valor || 0) }]);
+  const toCents = (v) => Math.round(Number(v || 0) * 100);
+  const itemsTotalCents = (items) => items.reduce((sum, item) => sum + Number(item.quantidade) * toCents(item.valor_unitario), 0);
+  const orderSummary = (items) => items.length === 1 ? items[0].descricao : `${items[0].descricao} (+ ${items.length-1} ${items.length===2?'item':'itens'})`.slice(0, 250);
+  function validateItems(items) {
+    if (!items.length || items.length > MAX_ITEMS) throw Error('O pedido deve ter de 1 a 100 itens.');
+    for (const item of items) {
+      if (typeof item.descricao !== 'string' || !item.descricao.trim() || item.descricao.length > 250) throw Error('Informe a descrição de cada item (até 250 caracteres).');
+      if (!Number.isInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 99999) throw Error('A quantidade deve ser um número inteiro entre 1 e 99.999.');
+      if (!Number.isFinite(item.valor_unitario) || item.valor_unitario < 0 || item.valor_unitario > 999999999.99) throw Error('Confira o valor unitário dos itens.');
+      if (Math.abs(item.valor_unitario * 100 - toCents(item.valor_unitario)) > 0.000001) throw Error('O valor unitário deve ter no máximo duas casas decimais.');
+    }
+    const total = itemsTotalCents(items);
+    if (!Number.isSafeInteger(total) || total > 999999999999) throw Error('O total do pedido excede o limite permitido.');
+    return total / 100;
+  }
+  function itemRow(item={descricao:'', quantidade:1, valor_unitario:0}) {
+    return `<div class="order-item-row" data-item-row>
+      <div class="field item-name"><label>Produto / serviço *</label><input class="item-descricao" type="text" required maxlength="250" placeholder="Ex.: Camiseta azul" value="${esc(item.descricao)}"></div>
+      <div class="field item-qty"><label>Quantidade *</label><input class="item-quantidade" type="number" required min="1" max="99999" step="1" value="${esc(Number(item.quantidade))}"></div>
+      <div class="field item-price"><label>Valor unitário (R$) *</label><input class="item-valor" type="number" required min="0" max="999999999.99" step="0.01" inputmode="decimal" value="${esc(Number(item.valor_unitario))}"></div>
+      <div class="item-subtotal"><span>Subtotal</span><strong data-item-subtotal>R$ 0,00</strong></div>
+      <button class="item-remove" type="button" data-remove-item aria-label="Remover item">✕</button>
+    </div>`;
+  }
+  function updateItemsPreview() {
+    const list = $('itens-list');
+    if (!list) return;
+    let sum = 0;
+    const rows = [...list.querySelectorAll('[data-item-row]')];
+    rows.forEach(row => {
+      const qty = Number(row.querySelector('.item-quantidade').value);
+      const unit = Number(row.querySelector('.item-valor').value);
+      const subtotal = Number.isInteger(qty) && qty > 0 && Number.isFinite(unit) && unit >= 0 ? qty * toCents(unit) : 0;
+      sum += subtotal;
+      row.querySelector('[data-item-subtotal]').textContent = money(subtotal / 100);
+      row.querySelector('[data-remove-item]').disabled = rows.length === 1;
+    });
+    $('items-total').textContent = money(sum / 100);
+    $('items-count').textContent = `${rows.length} ${rows.length === 1 ? 'item' : 'itens'}`;
+    $('add-item-btn').disabled = rows.length >= MAX_ITEMS;
+  }
+  function collectItems() {
+    return [...$('itens-list').querySelectorAll('[data-item-row]')].map(row => ({
+      descricao: row.querySelector('.item-descricao').value.trim(),
+      quantidade: Number(row.querySelector('.item-quantidade').value),
+      valor_unitario: Number(row.querySelector('.item-valor').value)
+    }));
+  }
   const toast = (msg) => { $('toast').textContent = msg; $('toast').classList.remove('hidden'); clearTimeout(toast.timer); toast.timer = setTimeout(() => $('toast').classList.add('hidden'), 4400); };
   const setAlert = (msg) => { $('app-alert').textContent = msg; $('app-alert').classList.toggle('hidden', !msg); };
   const errMsg = (e) => e?.message || 'Ocorreu um erro inesperado.';
@@ -81,7 +133,7 @@
     const cMap = new Map(state.clients.map(x => [x.id,x]));
     const rows = state.orders.filter(o => {
       const c = cMap.get(o.cliente_id);
-      return (!search || norm(`${o.descricao} ${o.observacoes} ${c?.nome || ''}`).includes(search)) && (!status || o.status === status) && (!client || o.cliente_id === client);
+      return (!search || norm(`${o.descricao} ${getItems(o).map(i=>i.descricao).join(' ')} ${o.observacoes} ${c?.nome || ''}`).includes(search)) && (!status || o.status === status) && (!client || o.cliente_id === client);
     }).sort((a,b) => {
       const cmp = String(a.data_pedido).localeCompare(String(b.data_pedido));
       const tie = String(a.created_at||'').localeCompare(String(b.created_at||''));
@@ -91,7 +143,9 @@
     $('order-rows').innerHTML = rows.map(o=>{
       const c = cMap.get(o.cliente_id);
       const statusClass = {'Pendente':'pendente','Em andamento':'em-andamento','Concluído':'concluido','Cancelado':'cancelado'}[o.status] || 'pendente';
-      return `<tr><td class="date-cell">${esc(formatDate(o.data_pedido))}</td><td><div class="cell-main">${esc(c?.nome || 'Cliente removido')}</div><div class="cell-sub">${esc(c?.telefone || '')}</div></td><td><div class="cell-main">${esc(o.descricao)}</div>${o.observacoes ? `<div class="cell-sub">${esc(o.observacoes).slice(0,100)}</div>`:''}</td><td class="price-cell">${esc(money(o.valor))}</td><td><span class="status status-${statusClass}">${esc(o.status)}</span></td><td class="actions-col"><div class="row-actions"><button class="icon-btn" type="button" data-action="edit-order" data-id="${esc(o.id)}" title="Editar pedido">Editar</button><button class="icon-btn danger" type="button" data-action="delete-order" data-id="${esc(o.id)}" title="Excluir pedido">Excluir</button></div></td></tr>`;
+      const itens = getItems(o);
+      const itemDescriptions = itens.map(i => `${i.quantidade}× ${i.descricao}`).join(' · ');
+      return `<tr><td class="date-cell">${esc(formatDate(o.data_pedido))}</td><td><div class="cell-main">${esc(c?.nome || 'Cliente removido')}</div><div class="cell-sub">${esc(c?.telefone || '')}</div></td><td><div class="cell-main">${itens.length} ${itens.length === 1 ? 'item' : 'itens'} no pedido</div><div class="cell-sub order-item-preview" title="${esc(itemDescriptions)}">${esc(itemDescriptions)}</div>${o.observacoes ? `<div class="cell-sub">${esc(o.observacoes.slice(0,100))}</div>`:''}</td><td class="price-cell">${esc(money(o.valor))}</td><td><span class="status status-${statusClass}">${esc(o.status)}</span></td><td class="actions-col"><div class="row-actions"><button class="icon-btn" type="button" data-action="edit-order" data-id="${esc(o.id)}" title="Ver ou editar itens">Ver / editar</button><button class="icon-btn danger" type="button" data-action="delete-order" data-id="${esc(o.id)}" title="Excluir pedido">Excluir</button></div></td></tr>`;
     }).join('');
     $('orders-empty').classList.toggle('hidden',rows.length !== 0);
     $('orders-empty-title').textContent = state.orders.length ? 'Nenhum pedido encontrado' : 'Nenhum pedido cadastrado';
@@ -108,13 +162,26 @@
     const rec = id ? (type === 'order' ? state.orders : state.clients).find(x=>x.id===id) : null;
     if (type === 'order' && !state.clients.length) { toast('Primeiro cadastre um cliente para vincular o pedido.'); state.page='clientes'; render(); openModal('client'); return; }
     state.modal = {type,id};
+    document.querySelector('#modal-backdrop .modal').classList.toggle('modal-wide',type==='order');
     const editing = !!rec;
     $('modal-title').textContent = `${editing?'Editar':'Novo'} ${type==='order'?'pedido':'cliente'}`;
     $('modal-kicker').textContent = editing ? 'EDITAR REGISTRO' : 'CADASTRO';
     if (type === 'client') {
       $('form-fields').innerHTML = `<div class="field"><label for="f-nome">Nome do cliente *</label><input id="f-nome" name="nome" type="text" maxlength="160" required placeholder="Nome completo ou empresa" value="${esc(rec?.nome||'')}"></div><div class="form-grid"><div class="field"><label for="f-telefone">Telefone</label><input id="f-telefone" name="telefone" maxlength="35" type="tel" placeholder="(99) 99999-9999" value="${esc(rec?.telefone||'')}"></div><div class="field"><label for="f-email">E-mail</label><input id="f-email" name="email" maxlength="200" type="email" placeholder="contato@exemplo.com" value="${esc(rec?.email||'')}"></div></div>`;
     } else {
-      $('form-fields').innerHTML = `<div class="form-grid"><div class="field span2"><label for="f-cliente">Cliente *</label><select id="f-cliente" name="cliente_id" required><option value="">Selecione um cliente</option>${[...state.clients].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(c=>`<option value="${esc(c.id)}" ${rec?.cliente_id === c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select><button class="inline-link" id="add-client-in-order" type="button">+ Cadastrar outro cliente</button></div><div class="field span2"><label for="f-desc">Descrição do pedido *</label><input id="f-desc" name="descricao" type="text" maxlength="250" placeholder="Ex.: 2 unidades do produto X" required value="${esc(rec?.descricao||'')}"></div><div class="field"><label for="f-data">Data do pedido *</label><input id="f-data" name="data_pedido" type="date" required value="${esc(rec?.data_pedido||today())}"></div><div class="field"><label for="f-valor">Valor (R$)</label><input id="f-valor" name="valor" type="number" inputmode="decimal" min="0" max="999999999" step="0.01" value="${rec ? esc(Number(rec.valor||0)) : '0'}"></div><div class="field span2"><label for="f-status">Status</label><select id="f-status" name="status">${VALID_STATUS.map(s=>`<option ${rec?.status===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field span2"><label for="f-notes">Observações</label><textarea id="f-notes" name="observacoes" maxlength="3000" placeholder="Detalhes adicionais sobre o pedido">${esc(rec?.observacoes||'')}</textarea></div></div>`;
+      const items = rec ? getItems(rec) : [{ descricao:'', quantidade:1, valor_unitario:0 }];
+      $('form-fields').innerHTML = `<div class="form-grid">
+        <div class="field span2"><label for="f-cliente">Cliente *</label><select id="f-cliente" name="cliente_id" required><option value="">Selecione um cliente</option>${[...state.clients].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(c=>`<option value="${esc(c.id)}" ${rec?.cliente_id === c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select><button class="inline-link" id="add-client-in-order" type="button">+ Cadastrar outro cliente</button></div>
+        <div class="field"><label for="f-data">Data do pedido *</label><input id="f-data" name="data_pedido" type="date" required value="${esc(rec?.data_pedido||today())}"></div>
+        <div class="field"><label for="f-status">Status</label><select id="f-status" name="status">${VALID_STATUS.map(s=>`<option ${rec?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <section class="order-items-section span2" aria-label="Itens do pedido">
+          <div class="order-items-head"><div><h3>Itens do pedido <span class="order-items-count" id="items-count"></span></h3><p>Inclua quantos produtos ou serviços precisar no mesmo pedido.</p></div><button class="btn btn-light add-item-btn" type="button" id="add-item-btn" data-add-item>+ Adicionar item</button></div>
+          <div id="itens-list">${items.map(itemRow).join('')}</div>
+          <div class="order-items-total"><span>Total do pedido</span><strong id="items-total">R$ 0,00</strong></div>
+        </section>
+        <div class="field span2"><label for="f-notes">Observações</label><textarea id="f-notes" name="observacoes" maxlength="3000" placeholder="Detalhes adicionais sobre o pedido">${esc(rec?.observacoes||'')}</textarea></div>
+      </div>`;
+      updateItemsPreview();
       $('add-client-in-order').addEventListener('click',()=>{closeModal(); state.page='clientes'; render(); openModal('client'); toast('Cadastre o cliente e depois crie o pedido.');});
     }
     $('form-save').textContent = editing ? 'Salvar alterações' : `Cadastrar ${type === 'order' ? 'pedido' : 'cliente'}`;
@@ -147,13 +214,16 @@
       payload = {nome: String(f.get('nome')||'').trim(),telefone:String(f.get('telefone')||'').trim(),email:String(f.get('email')||'').trim()};
       if (!payload.nome) return toast('Informe o nome do cliente.');
     } else {
-      payload = {cliente_id:String(f.get('cliente_id')||''),descricao:String(f.get('descricao')||'').trim(),data_pedido:String(f.get('data_pedido')||''),valor:Number(f.get('valor')||0),status:String(f.get('status')||''),observacoes:String(f.get('observacoes')||'').trim()};
+      const itens = collectItems();
+      let valor;
+      try { valor = validateItems(itens); } catch (error) { return toast(errMsg(error)); }
+      payload = {cliente_id:String(f.get('cliente_id')||''),descricao:orderSummary(itens),itens,data_pedido:String(f.get('data_pedido')||''),valor,status:String(f.get('status')||''),observacoes:String(f.get('observacoes')||'').trim()};
       if (!state.clients.some(x=>x.id===payload.cliente_id)) return toast('Selecione um cliente válido.');
-      if (!payload.descricao || !/^\d{4}-\d\d-\d\d$/.test(payload.data_pedido) || !VALID_STATUS.includes(payload.status) || !Number.isFinite(payload.valor) || payload.valor < 0) return toast('Confira os dados do pedido.');
+      if (!/^\d{4}-\d\d-\d\d$/.test(payload.data_pedido) || !VALID_STATUS.includes(payload.status)) return toast('Confira a data e o status do pedido.');
     }
     state.busy=true; $('form-save').disabled=true;
     try { await writeRecord(type,id,payload); closeModal(); toast(`${type==='client'?'Cliente':'Pedido'} ${id?'atualizado':'cadastrado'} com sucesso.`); }
-    catch(e){toast(`Erro ao salvar: ${errMsg(e)}`)}
+    catch(e){toast(e?.code === 'PGRST204' || /column.*itens|itens.*column/i.test(errMsg(e)) ? 'Atualize o banco: execute MIGRACAO_SUPABASE.sql antes de usar vários itens.' : `Erro ao salvar: ${errMsg(e)}`)}
     finally{state.busy=false;$('form-save').disabled=false;}
   }
   async function removeRecord(type,id) {
@@ -187,12 +257,13 @@
     } else {
       const cMap = new Map(state.clients.map(c=>[c.id,c.nome]));
       const rows = [...state.orders].sort((a,b)=>b.data_pedido.localeCompare(a.data_pedido));
-      download(`pedidos-${date}.csv`,toCSV([['Data','Cliente','Descrição','Valor (R$)','Status','Observações'],...rows.map(o=>[formatDate(o.data_pedido),cMap.get(o.cliente_id)||'',o.descricao,Number(o.valor||0).toFixed(2).replace('.',','),o.status,o.observacoes])]),'text/csv;charset=utf-8');
+      const lines = rows.flatMap(o => getItems(o).map((i,idx) => [o.id,formatDate(o.data_pedido),cMap.get(o.cliente_id)||'',i.descricao,i.quantidade,Number(i.valor_unitario).toFixed(2).replace('.',','),(Number(i.quantidade)*toCents(i.valor_unitario)/100).toFixed(2).replace('.',','),idx===0?Number(o.valor||0).toFixed(2).replace('.',','):'',o.status,idx===0?o.observacoes:'']));
+      download(`pedidos-${date}.csv`,toCSV([['ID pedido','Data','Cliente','Item','Quantidade','Valor unitário (R$)','Subtotal (R$)','Total pedido (R$)','Status','Observações'],...lines]),'text/csv;charset=utf-8');
     }
     toast('Arquivo CSV exportado.');
   }
   function exportBackup() {
-    download(`backup-pedidos-${today()}.json`,JSON.stringify({app:'gestor-pedidos',version:1,exported_at:new Date().toISOString(),clients:state.clients,orders:state.orders},null,2),'application/json');toast('Backup JSON salvo. Guarde em local seguro.');
+    download(`backup-pedidos-${today()}.json`,JSON.stringify({app:'gestor-pedidos',version:2,exported_at:new Date().toISOString(),clients:state.clients,orders:state.orders},null,2),'application/json');toast('Backup JSON salvo. Guarde em local seguro.');
   }
   async function importBackup(file) {
     if (!file || state.mode !== 'local') return;
@@ -209,7 +280,9 @@
       const orderIds = new Set();
       const orders = data.orders.map(o=>{
         if(typeof o.id!=='string'||!o.id||orderIds.has(o.id)||!ids.has(o.cliente_id)||typeof o.descricao!=='string'||!/^\d{4}-\d\d-\d\d$/.test(o.data_pedido)||!VALID_STATUS.includes(o.status)||!Number.isFinite(Number(o.valor))||Number(o.valor)<0) throw Error('Dados de pedidos inválidos.');
-        orderIds.add(o.id); return {id:o.id,cliente_id:o.cliente_id,descricao:o.descricao.slice(0,250),data_pedido:o.data_pedido,valor:Number(o.valor),status:o.status,observacoes:String(o.observacoes||'').slice(0,3000),created_at:String(o.created_at||new Date().toISOString())};
+        const itens = getItems(o).map(i=>({descricao:String(i.descricao || '').trim(), quantidade:Number(i.quantidade), valor_unitario:Number(i.valor_unitario)}));
+        const total = validateItems(itens);
+        orderIds.add(o.id); return {id:o.id,cliente_id:o.cliente_id,descricao:orderSummary(itens),itens,data_pedido:o.data_pedido,valor:total,status:o.status,observacoes:String(o.observacoes||'').slice(0,3000),created_at:String(o.created_at||new Date().toISOString())};
       });
       if (!window.confirm(`Restaurar ${clients.length} clientes e ${orders.length} pedidos? Todos os dados LOCAIS atuais serão substituídos. Faça um backup antes de continuar.`)) return;
       localStorage.setItem(LOCAL_KEY,JSON.stringify({clients,orders})); state.clients=clients;state.orders=orders;render();toast('Backup restaurado com sucesso.');
@@ -255,6 +328,24 @@
     $('client-search').addEventListener('input',renderClients);
     $('order-rows').addEventListener('click',handleRowAction);$('client-rows').addEventListener('click',handleRowAction);
     $('record-form').addEventListener('submit',submitRecord);
+
+    $('form-fields').addEventListener('click', (e) => {
+      if (e.target.closest('[data-add-item]')) {
+        const list = $('itens-list');
+        if (!list || list.children.length >= MAX_ITEMS) return toast('Limite de 100 itens por pedido.');
+        list.insertAdjacentHTML('beforeend',itemRow());
+        updateItemsPreview();
+        list.lastElementChild.querySelector('.item-descricao').focus();
+      }
+      if (e.target.closest('[data-remove-item]')) {
+        const list = $('itens-list'), row = e.target.closest('[data-item-row]');
+        if (!list || !row || list.children.length <= 1) return;
+        row.remove(); updateItemsPreview();
+      }
+    });
+    $('form-fields').addEventListener('input', (e) => {
+      if (e.target.matches('.item-quantidade, .item-valor')) updateItemsPreview();
+    });
     $('modal-close').addEventListener('click',closeModal);$('modal-cancel').addEventListener('click',closeModal);
     $('modal-backdrop').addEventListener('click',(e)=>{if(e.target===$('modal-backdrop'))closeModal();});
     document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){$('cloud-backdrop').classList.add('hidden');closeModal();}});
