@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Links dos clientes | Mini Forge 64</title>
+  <link rel="stylesheet" href="portal.css">
+  <script src="config.js" defer></script>
+  <script type="module" src="acessos.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <header class="top">
+      <a class="brand" href="index.html"><span class="mark">MF</span><span><span class="brand-name">MINI <span>FORGE 64</span></span><span class="brand-sub">Área administrativa</span></span></a>
+      <a class="return" href="index.html">← Voltar ao gestor</a>
+    </header>
+    <div class="eyebrow">PORTAL DO CLIENTE</div>
+    <h1 class="main-title">Links de acompanhamento</h1>
+    <p class="lead">Cada cliente possui um link exclusivo. Envie uma única vez: pedidos atuais e futuros aparecerão na mesma página, organizados por data.</p>
+    <div class="notice" id="notice" role="status">Verificando seu acesso…</div>
+    <section class="panel hidden" id="login-box">
+      <h2 style="margin:0;color:#153453;font-size:19px">Entrar como administrador</h2>
+      <p class="info">Utilize o mesmo login do Gestor de Pedidos.</p>
+      <form class="form" id="login-form">
+        <label>E-mail<input id="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
+        <button class="button" type="submit">Entrar no painel</button>
+      </form>
+    </section>
+    <section class="hidden" id="workspace">
+      <div class="toolbar">
+        <input class="search" id="search" type="search" placeholder="Buscar cliente por nome ou telefone" aria-label="Buscar clientes">
+        <button class="button light" id="reload" type="button">↻ Atualizar</button>
+      </div>
+      <div class="stack" id="clients"></div>
+      <p class="info">O link é confidencial. Qualquer pessoa que o tenha poderá acompanhar todos os pedidos deste cliente. Use “Revogar link” se ele for compartilhado por engano.</p>
+    </section>
+    <footer class="foot">Mini Forge 64 · Acesso exclusivo da administração</footer>
+  </div>
+</body>
+</html>

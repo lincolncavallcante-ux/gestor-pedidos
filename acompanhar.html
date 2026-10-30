@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b2545">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Meus pedidos | Mini Forge 64</title>
+  <link rel="stylesheet" href="portal.css">
+  <script src="config.js" defer></script>
+  <script type="module" src="acompanhar.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <header class="top">
+      <div class="brand"><span class="mark">MF</span><span><span class="brand-name">MINI <span>FORGE 64</span></span><span class="brand-sub">Acompanhamento de encomendas</span></span></div>
+    </header>
+    <div class="eyebrow">SEU ESPAÇO</div>
+    <h1 class="main-title" id="title">Meus pedidos</h1>
+    <p class="lead">Acompanhe suas encomendas, veja os itens e consulte o andamento em um só lugar.</p>
+    <div class="notice" id="notice" role="status">Carregando seus pedidos…</div>
+    <section class="hidden" id="workspace">
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Pedidos</div><div class="stat-value" id="total">0</div></div>
+        <div class="stat"><div class="stat-label">Em aberto</div><div class="stat-value" id="andamento">0</div></div>
+        <div class="stat"><div class="stat-label">Concluídos</div><div class="stat-value" id="concluidos">0</div></div>
+      </div>
+      <div class="toolbar">
+        <div style="flex:1;color:#546e86;font-weight:750;font-size:15px">Histórico de pedidos</div>
+        <button type="button" class="button light small" id="refresh">↻ Atualizar status</button>
+      </div>
+      <div class="stack" id="orders"></div>
+      <p class="info">O acompanhamento apresenta o status registrado pela Mini Forge 64. Caso precise de detalhes adicionais, entre em contato com a loja.</p>
+    </section>
+    <footer class="foot">Mini Forge 64 · Feito com cuidado, em cada detalhe.</footer>
+  </div>
+</body>
+</html>
