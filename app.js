@@ -4,6 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const LOCAL_KEY = 'gestor_pedidos_v1';
   const MODE_KEY = 'gestor_pedidos_mode_v1';
+  // Comprovante não fiscal: abre uma página de impressão protegida pelo login.
   const VALID_STATUS = ['Pendente', 'Em andamento', 'Concluído', 'Cancelado'];
   const state = { page: 'pedidos', clients: [], orders: [], mode: localStorage.getItem(MODE_KEY) === 'cloud' ? 'cloud' : 'local', supabase: null, session: null, modal: null, registering: false, busy: false };
   const config = window.APP_CONFIG || {};
@@ -145,7 +146,7 @@
       const statusClass = {'Pendente':'pendente','Em andamento':'em-andamento','Concluído':'concluido','Cancelado':'cancelado'}[o.status] || 'pendente';
       const itens = getItems(o);
       const itemDescriptions = itens.map(i => `${i.quantidade}× ${i.descricao}`).join(' · ');
-      return `<tr><td class="date-cell">${esc(formatDate(o.data_pedido))}</td><td><div class="cell-main">${esc(c?.nome || 'Cliente removido')}</div><div class="cell-sub">${esc(c?.telefone || '')}</div></td><td><div class="cell-main">${itens.length} ${itens.length === 1 ? 'item' : 'itens'} no pedido</div><div class="cell-sub order-item-preview" title="${esc(itemDescriptions)}">${esc(itemDescriptions)}</div>${o.observacoes ? `<div class="cell-sub">${esc(o.observacoes.slice(0,100))}</div>`:''}</td><td class="price-cell">${esc(money(o.valor))}</td><td><span class="status status-${statusClass}">${esc(o.status)}</span></td><td class="actions-col"><div class="row-actions"><button class="icon-btn" type="button" data-action="edit-order" data-id="${esc(o.id)}" title="Ver ou editar itens">Ver / editar</button><button class="icon-btn danger" type="button" data-action="delete-order" data-id="${esc(o.id)}" title="Excluir pedido">Excluir</button></div></td></tr>`;
+      return `<tr><td class="date-cell">${esc(formatDate(o.data_pedido))}</td><td><div class="cell-main">${esc(c?.nome || 'Cliente removido')}</div><div class="cell-sub">${esc(c?.telefone || '')}</div></td><td><div class="cell-main">${itens.length} ${itens.length === 1 ? 'item' : 'itens'} no pedido</div><div class="cell-sub order-item-preview" title="${esc(itemDescriptions)}">${esc(itemDescriptions)}</div>${o.observacoes ? `<div class="cell-sub">${esc(o.observacoes.slice(0,100))}</div>`:''}</td><td class="price-cell">${esc(money(o.valor))}</td><td><span class="status status-${statusClass}">${esc(o.status)}</span></td><td class="actions-col"><div class="row-actions"><button class="icon-btn" type="button" data-action="edit-order" data-id="${esc(o.id)}" title="Ver ou editar itens">Ver / editar</button><button class="icon-btn" type="button" data-action="receipt-order" data-id="${esc(o.id)}" title="Gerar comprovante de pedido para imprimir ou salvar PDF">Comprovante</button><button class="icon-btn danger" type="button" data-action="delete-order" data-id="${esc(o.id)}" title="Excluir pedido">Excluir</button></div></td></tr>`;
     }).join('');
     $('orders-empty').classList.toggle('hidden',rows.length !== 0);
     $('orders-empty-title').textContent = state.orders.length ? 'Nenhum pedido encontrado' : 'Nenhum pedido cadastrado';
@@ -299,6 +300,15 @@
   function handleRowAction(e) {
     const b = e.target.closest('button[data-action]');if(!b)return;
     const {action,id} = b.dataset;
+    if(action==='receipt-order') {
+      const order = state.orders.find(o => o.id === id);
+      if (!order) return toast('Pedido não encontrado.');
+      const url = new URL('comprovante.html', window.location.href);
+      url.searchParams.set('pedido', String(order.id));
+      if (state.mode === 'local') url.searchParams.set('local', '1');
+      // O comprovante usa o login atual ou os registros locais, sem divulgar códigos do portal.
+      window.open(url.href, '_blank', 'noopener');
+    }
     if(action==='edit-order') openModal('order',id);
     if(action==='edit-client') openModal('client',id);
     if(action==='delete-order') removeRecord('order',id);

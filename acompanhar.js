@@ -70,7 +70,24 @@ function render(data) {
     }
     body.append(list);
     details.append(body);
-    card.append(main, details);
+    if (UUID_RE.test(String(order.id || '')) && Number.isFinite(Number(order.valor))) {
+      const receiptUrl = new URL('comprovante.html', location.href);
+      // Fragmento URL: o código de acesso não é enviado ao servidor do GitHub Pages.
+      receiptUrl.hash = new URLSearchParams({chave, pedido: order.id}).toString();
+      const receipt = document.createElement('a');
+      receipt.className = 'receipt-link';
+      receipt.href = receiptUrl.href;
+      receipt.target = '_blank';
+      receipt.rel = 'noopener noreferrer';
+      receipt.textContent = '↗ Ver comprovante / salvar PDF';
+      const actionRow = document.createElement('div');
+      actionRow.className = 'receipt-row';
+      actionRow.append(receipt);
+      card.append(main, details, actionRow);
+    } else {
+      card.append(main, details);
+    }
+
     root.append(card);
   }
   $('workspace').classList.remove('hidden');

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0b2545">
+  <title>Comprovante do pedido | Mini Forge 64</title>
+  <link rel="stylesheet" href="comprovante.css">
+  <script defer src="config.js"></script>
+  <script type="module" src="comprovante.js"></script>
+</head>
+<body>
+  <div class="page">
+    <div class="toolbar no-print">
+      <span>Mini Forge 64 · Comprovante não fiscal</span>
+      <button id="print" type="button" disabled>Imprimir / Salvar PDF</button>
+    </div>
+    <section id="message" class="message" role="status">Carregando dados do pedido…</section>
+    <main id="receipt" class="sheet" hidden>
+      <header class="header">
+        <div class="brand"><div class="logo">MF</div><div><div class="brand-title">MINI FORGE 64</div><div class="brand-subtitle">Encomendas e miniaturas</div></div></div>
+        <div class="doc-title"><strong>COMPROVANTE DE PEDIDO</strong><small>DOCUMENTO NÃO FISCAL</small></div>
+      </header>
+      <section class="meta-grid">
+        <div><span class="label">REFERÊNCIA</span><strong id="ref"></strong></div>
+        <div><span class="label">DATA DO PEDIDO</span><strong id="date"></strong></div>
+        <div><span class="label">CLIENTE</span><strong id="client"></strong></div>
+        <div><span class="label">STATUS</span><strong id="status"></strong></div>
+      </section>
+      <div class="table-wrap"><table aria-label="Itens e valores do pedido">
+        <thead><tr><th>PRODUTO / SERVIÇO</th><th class="numeric">QTD.</th><th class="numeric">VALOR UNIT.</th><th class="numeric">SUBTOTAL</th></tr></thead>
+        <tbody id="items"></tbody>
+      </table></div>
+      <div class="total-row"><span>TOTAL DO PEDIDO</span><strong id="total"></strong></div>
+      <p class="footer-note">Este documento é um resumo da encomenda registrada na Mini Forge 64. Não é nota fiscal eletrônica (NF-e/NFC-e), não comprova pagamento e não substitui documento fiscal.</p>
+      <footer>Mini Forge 64 · Gerado em <span id="generated"></span></footer>
+    </main>
+  </div>
+</body>
+</html>
