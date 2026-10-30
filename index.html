@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b2545">
   <meta name="description" content="Sistema simples de cadastro de clientes e controle de pedidos, com organização por data.">
-  <title>Gestor de Pedidos | Clientes e Pedidos</title>
+  <title>Mini Forge 64 | Gestão de pedidos</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="config.js"></script>
   <script defer src="app.js"></script>
@@ -13,7 +13,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand"><div class="brand-icon">P</div><div><strong>PEDIDOS</strong><span>Gestão simplificada</span></div></div>
+      <div class="brand"><img class="brand-logo-img" src="assets/logo-mini-forge64.jpg" alt="Logo Mini Forge 64"><div><strong>MINI FORGE 64</strong><span>Gestão simplificada</span></div></div>
       <div class="sidebar-label">MENU</div>
       <nav aria-label="Navegação principal">
         <button class="nav-item active" data-page="pedidos" type="button"><span class="nav-symbol">▤</span> Pedidos</button>
@@ -74,7 +74,7 @@
     <p class="tiny-note">O GitHub Pages hospeda o site, mas não armazena automaticamente os pedidos. Dados locais e dados da nuvem são separados; utilize exportação e restauração de backup para migrar.</p>
   </div></div>
 
-  <div class="auth-overlay hidden" id="auth-screen"><div class="auth-card"><div class="brand auth-brand"><div class="brand-icon">P</div><div><strong>PEDIDOS</strong><span>Área de acesso</span></div></div><h1>Acesse seus pedidos</h1><p>Entre na sua conta para visualizar os dados armazenados na nuvem.</p><form id="auth-form"><div class="field"><label for="auth-email">E-mail</label><input type="email" id="auth-email" required autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="auth-password">Senha</label><input type="password" id="auth-password" minlength="6" required autocomplete="current-password" placeholder="Sua senha"></div><button class="btn btn-primary full-width" type="submit" id="auth-submit">Entrar</button></form><div id="auth-message" class="auth-message" role="status"></div><div class="auth-bottom"><button type="button" id="auth-toggle" class="text-btn">Criar uma conta</button><button type="button" id="auth-local" class="text-btn">Usar apenas neste navegador</button></div></div></div>
+  <div class="auth-overlay hidden" id="auth-screen"><div class="auth-card"><div class="brand auth-brand"><img class="brand-logo-img" src="assets/logo-mini-forge64.jpg" alt="Logo Mini Forge 64"><div><strong>MINI FORGE 64</strong><span>Área de acesso</span></div></div><h1>Acesse seus pedidos</h1><p>Entre na sua conta para visualizar os dados armazenados na nuvem.</p><form id="auth-form"><div class="field"><label for="auth-email">E-mail</label><input type="email" id="auth-email" required autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="auth-password">Senha</label><input type="password" id="auth-password" minlength="6" required autocomplete="current-password" placeholder="Sua senha"></div><button class="btn btn-primary full-width" type="submit" id="auth-submit">Entrar</button></form><div id="auth-message" class="auth-message" role="status"></div><div class="auth-bottom"><button type="button" id="auth-toggle" class="text-btn">Criar uma conta</button><button type="button" id="auth-local" class="text-btn">Usar apenas neste navegador</button></div></div></div>
 
   <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 </body>
