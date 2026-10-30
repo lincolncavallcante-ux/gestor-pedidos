@@ -1,4 +1,4 @@
-/* Gestor de Pedidos Mini Forge 64 v6 — Supabase obrigatório, múltiplos itens e comprovantes. */
+/* Gestor de Pedidos Mini Forge 64 v9 — Supabase obrigatório, múltiplos itens e comprovantes. */
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
@@ -159,7 +159,9 @@
     const rec = id ? (type === 'order' ? state.orders : state.clients).find(x=>x.id===id) : null;
     if (type === 'order' && !state.clients.length) { toast('Primeiro cadastre um cliente para vincular o pedido.'); state.page='clientes'; render(); openModal('client'); return; }
     state.modal = {type,id};
-    document.querySelector('#modal-backdrop .modal').classList.toggle('modal-wide',type==='order');
+    const dialog = document.querySelector('#modal-backdrop .modal');
+    dialog.classList.toggle('modal-wide', type === 'order');
+    dialog.dataset.kind = type;
     const editing = !!rec;
     $('modal-title').textContent = `${editing?'Editar':'Novo'} ${type==='order'?'pedido':'cliente'}`;
     $('modal-kicker').textContent = editing ? 'EDITAR REGISTRO' : 'CADASTRO';

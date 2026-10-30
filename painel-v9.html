@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b2545">
+  <meta name="mini-forge-layout" content="MINI_FORGE_LAYOUT_V9">
+  <meta name="application-name" content="Mini Forge 64 — v9 campos horizontais">
+  <meta name="description" content="Painel administrativo da Mini Forge 64 — clientes, pedidos e financeiro.">
+  <title>Mini Forge 64 | Gestão de pedidos</title>
+  <link rel="stylesheet" href="styles.css?v=mf64-v9">
+  <script defer src="config.js"></script>
+  <script defer src="app.js?v=mf64-v9"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><img class="brand-logo-img" style="display:block;width:52px;height:52px;max-width:52px;max-height:52px;flex:0 0 52px;object-fit:cover;border-radius:13px" src="assets/logo-mini-forge64.jpg" alt="Logo Mini Forge 64"><div><strong>MINI FORGE 64</strong><span>Gestão simplificada</span></div></div>
+      <div class="sidebar-label">MENU</div>
+      <nav aria-label="Navegação principal">
+        <button class="nav-item active" data-page="pedidos" type="button"><span class="nav-symbol">▤</span> Pedidos</button>
+        <button class="nav-item" data-page="clientes" type="button"><span class="nav-symbol">♙</span> Clientes</button>
+        <a class="nav-item" href="acessos.html" style="text-decoration:none"><span class="nav-symbol">↗</span> Portal dos clientes</a>
+        <a class="nav-item" href="financeiro.html" style="text-decoration:none"><span class="nav-symbol">◉</span> Financeiro</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="storage-info"><span class="storage-dot"></span><div><strong id="storage-label">Banco de dados online</strong><small id="storage-description">Conectando ao Supabase…</small></div></div>
+        <button class="sidebar-action" id="backup-btn" type="button">↓ Exportar backup</button>
+        <button class="sidebar-action hidden" id="logout-btn" type="button">Sair da conta</button>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="Abrir menu">☰</button><div class="breadcrumb">Painel <span>/</span> <strong id="breadcrumb-current">Pedidos</strong></div><div class="top-right"><span class="today" id="today-label"></span><span class="avatar">GP</span></div></header>
+      <main class="content" id="main-content">
+        <div class="page-head"><div><div class="eyebrow">ORGANIZAÇÃO DE VENDAS</div><h1 id="page-title">Controle de pedidos</h1><p id="page-subtitle">Acompanhe os pedidos de cada cliente em um só lugar.</p></div><div class="page-actions"><button class="btn btn-light" id="export-csv" type="button">↓ Exportar CSV</button><button class="btn btn-primary" id="new-btn" type="button">+ Novo pedido</button></div></div>
+        <div class="alert hidden" id="app-alert" role="status"></div>
+        <section id="orders-view">
+          <div class="metrics">
+            <div class="metric"><div class="metric-label">Total de pedidos <span>▤</span></div><div class="metric-value" id="metric-orders">0</div><div class="metric-foot">Pedidos cadastrados</div></div>
+            <div class="metric"><div class="metric-label">Em aberto <span>◷</span></div><div class="metric-value" id="metric-pending">0</div><div class="metric-foot">Pendentes ou em andamento</div></div>
+            <div class="metric"><div class="metric-label">Concluídos <span>✓</span></div><div class="metric-value" id="metric-done">0</div><div class="metric-foot">Pedidos finalizados</div></div>
+            <div class="metric"><div class="metric-label">Valor dos pedidos <span>R$</span></div><div class="metric-value amount" id="metric-value">R$ 0,00</div><div class="metric-foot">Exclui pedidos cancelados</div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><div><h2>Todos os pedidos</h2><p>Busque por cliente ou pedido e organize por data.</p></div><span class="count-pill" id="order-count">0 resultados</span></div>
+            <div class="filters">
+              <label class="search-box"><span>⌕</span><input type="search" id="order-search" placeholder="Buscar cliente ou descrição..." aria-label="Buscar pedidos"></label>
+              <label class="sr-only" for="status-filter">Filtrar por status</label><select id="status-filter"><option value="">Todos os status</option><option>Pendente</option><option>Em andamento</option><option>Concluído</option><option>Cancelado</option></select>
+              <label class="sr-only" for="client-filter">Filtrar por cliente</label><select id="client-filter"><option value="">Todos os clientes</option></select>
+              <label class="sr-only" for="date-sort">Ordenação</label><select id="date-sort"><option value="new">Mais recentes primeiro</option><option value="old">Mais antigos primeiro</option></select>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>DATA</th><th>CLIENTE</th><th>PEDIDO</th><th>VALOR</th><th>STATUS</th><th class="actions-col">AÇÕES</th></tr></thead><tbody id="order-rows"></tbody></table></div>
+            <div class="empty hidden" id="orders-empty"><div class="empty-icon">▤</div><h3 id="orders-empty-title">Nenhum pedido cadastrado</h3><p id="orders-empty-text">Comece cadastrando um cliente e depois crie o primeiro pedido.</p><button class="btn btn-primary" id="empty-create-order" type="button">+ Criar pedido</button></div>
+          </div>
+        </section>
+        <section class="hidden" id="clients-view">
+          <div class="panel"><div class="panel-title"><div><h2>Clientes cadastrados</h2><p>Veja todos os clientes e a quantidade de pedidos vinculados.</p></div><span class="count-pill" id="client-count">0 clientes</span></div>
+            <div class="filters"><label class="search-box"><span>⌕</span><input type="search" id="client-search" placeholder="Buscar por nome, telefone ou e-mail..." aria-label="Buscar clientes"></label></div>
+            <div class="table-wrap"><table><thead><tr><th>CLIENTE</th><th>CONTATO</th><th>PEDIDOS</th><th>CADASTRO</th><th class="actions-col">AÇÕES</th></tr></thead><tbody id="client-rows"></tbody></table></div>
+            <div class="empty hidden" id="clients-empty"><div class="empty-icon">♙</div><h3>Nenhum cliente encontrado</h3><p>Cadastre clientes para associar os pedidos a eles.</p><button class="btn btn-primary" id="empty-create-client" type="button">+ Adicionar cliente</button></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="modal-backdrop" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><div><div class="eyebrow" id="modal-kicker">CADASTRO</div><h2 id="modal-title">Novo pedido</h2></div><button class="close-btn" id="modal-close" type="button" aria-label="Fechar">×</button></div><form id="record-form"><div id="form-fields"></div><div class="modal-buttons"><button class="btn btn-light" type="button" id="modal-cancel">Cancelar</button><button class="btn btn-primary" type="submit" id="form-save">Salvar</button></div></form></div></div>
+
+  <div class="auth-overlay" id="auth-screen"><div class="auth-card"><div class="brand auth-brand"><img class="brand-logo-img" style="display:block;width:52px;height:52px;max-width:52px;max-height:52px;flex:0 0 52px;object-fit:cover;border-radius:13px" src="assets/logo-mini-forge64.jpg" alt="Logo Mini Forge 64"><div><strong>MINI FORGE 64</strong><span>Área de acesso</span></div></div><h1>Acesse seus pedidos</h1><p>Entre na sua conta para visualizar os dados armazenados na nuvem.</p><form id="auth-form"><div class="field"><label for="auth-email">E-mail</label><input type="email" id="auth-email" required autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="auth-password">Senha</label><input type="password" id="auth-password" minlength="6" required autocomplete="current-password" placeholder="Sua senha"></div><button class="btn btn-primary full-width" type="submit" id="auth-submit">Entrar</button></form><div id="auth-message" class="auth-message" role="status"></div></div></div>
+
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
