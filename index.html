@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b2545">
-  <meta name="description" content="Sistema simples de cadastro de clientes e controle de pedidos, com organização por data.">
+  <meta name="description" content="Painel administrativo da Mini Forge 64 — clientes, pedidos e financeiro.">
   <title>Mini Forge 64 | Gestão de pedidos</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261030-6">
   <script defer src="config.js"></script>
-  <script defer src="app.js"></script>
+  <script defer src="app.js?v=20261030-6"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -22,11 +22,8 @@
         <a class="nav-item" href="financeiro.html" style="text-decoration:none"><span class="nav-symbol">◉</span> Financeiro</a>
       </nav>
       <div class="sidebar-bottom">
-        <div class="storage-info"><span class="storage-dot"></span><div><strong id="storage-label">Armazenamento local</strong><small id="storage-description">Dados neste navegador</small></div></div>
-        <button class="sidebar-action" id="mode-btn" type="button">☁ Configurar nuvem</button>
+        <div class="storage-info"><span class="storage-dot"></span><div><strong id="storage-label">Banco de dados online</strong><small id="storage-description">Conectando ao Supabase…</small></div></div>
         <button class="sidebar-action" id="backup-btn" type="button">↓ Exportar backup</button>
-        <button class="sidebar-action" id="import-btn" type="button">↑ Restaurar backup</button>
-        <input type="file" id="import-file" accept="application/json,.json" hidden>
         <button class="sidebar-action hidden" id="logout-btn" type="button">Sair da conta</button>
       </div>
     </aside>
@@ -68,13 +65,7 @@
 
   <div class="overlay hidden" id="modal-backdrop" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><div><div class="eyebrow" id="modal-kicker">CADASTRO</div><h2 id="modal-title">Novo pedido</h2></div><button class="close-btn" id="modal-close" type="button" aria-label="Fechar">×</button></div><form id="record-form"><div id="form-fields"></div><div class="modal-buttons"><button class="btn btn-light" type="button" id="modal-cancel">Cancelar</button><button class="btn btn-primary" type="submit" id="form-save">Salvar</button></div></form></div></div>
 
-  <div class="overlay hidden" id="cloud-backdrop" role="presentation"><div class="modal cloud-modal" role="dialog" aria-modal="true" aria-labelledby="cloud-title"><div class="modal-heading"><div><div class="eyebrow">ARMAZENAMENTO</div><h2 id="cloud-title">Onde salvar os dados?</h2></div><button class="close-btn" id="cloud-close" type="button" aria-label="Fechar">×</button></div>
-    <div class="mode-option"><div><strong>▣ Neste navegador</strong><p>Funciona imediatamente e sem internet. Os dados ficam apenas neste dispositivo. Faça backups regularmente.</p></div><button class="btn btn-light" id="use-local" type="button">Usar local</button></div>
-    <div class="mode-option"><div><strong>☁ Banco de dados online</strong><p>Para salvar na nuvem e acessar em vários dispositivos, configure Supabase no arquivo <code>config.js</code> e execute o arquivo <code>supabase.sql</code>.</p></div><button class="btn btn-primary" id="use-cloud" type="button">Usar nuvem</button></div>
-    <p class="tiny-note">O GitHub Pages hospeda o site, mas não armazena automaticamente os pedidos. Dados locais e dados da nuvem são separados; utilize exportação e restauração de backup para migrar.</p>
-  </div></div>
-
-  <div class="auth-overlay hidden" id="auth-screen"><div class="auth-card"><div class="brand auth-brand"><img class="brand-logo-img" style="display:block;width:52px;height:52px;max-width:52px;max-height:52px;flex:0 0 52px;object-fit:cover;border-radius:13px" src="assets/logo-mini-forge64.jpg" alt="Logo Mini Forge 64"><div><strong>MINI FORGE 64</strong><span>Área de acesso</span></div></div><h1>Acesse seus pedidos</h1><p>Entre na sua conta para visualizar os dados armazenados na nuvem.</p><form id="auth-form"><div class="field"><label for="auth-email">E-mail</label><input type="email" id="auth-email" required autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="auth-password">Senha</label><input type="password" id="auth-password" minlength="6" required autocomplete="current-password" placeholder="Sua senha"></div><button class="btn btn-primary full-width" type="submit" id="auth-submit">Entrar</button></form><div id="auth-message" class="auth-message" role="status"></div><div class="auth-bottom"><button type="button" id="auth-toggle" class="text-btn">Criar uma conta</button><button type="button" id="auth-local" class="text-btn">Usar apenas neste navegador</button></div></div></div>
+  <div class="auth-overlay" id="auth-screen"><div class="auth-card"><div class="brand auth-brand"><img class="brand-logo-img" style="display:block;width:52px;height:52px;max-width:52px;max-height:52px;flex:0 0 52px;object-fit:cover;border-radius:13px" src="assets/logo-mini-forge64.jpg" alt="Logo Mini Forge 64"><div><strong>MINI FORGE 64</strong><span>Área de acesso</span></div></div><h1>Acesse seus pedidos</h1><p>Entre na sua conta para visualizar os dados armazenados na nuvem.</p><form id="auth-form"><div class="field"><label for="auth-email">E-mail</label><input type="email" id="auth-email" required autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="auth-password">Senha</label><input type="password" id="auth-password" minlength="6" required autocomplete="current-password" placeholder="Sua senha"></div><button class="btn btn-primary full-width" type="submit" id="auth-submit">Entrar</button></form><div id="auth-message" class="auth-message" role="status"></div></div></div>
 
   <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 </body>

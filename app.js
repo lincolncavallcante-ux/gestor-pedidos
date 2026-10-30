@@ -1,12 +1,11 @@
-/* Gestor de Pedidos v2 - múltiplos itens por pedido; local e Supabase. */
+/* Gestor de Pedidos Mini Forge 64 v6 — Supabase obrigatório, múltiplos itens e comprovantes. */
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
   const LOCAL_KEY = 'gestor_pedidos_v1';
-  const MODE_KEY = 'gestor_pedidos_mode_v1';
   // Comprovante não fiscal: abre uma página de impressão protegida pelo login.
   const VALID_STATUS = ['Pendente', 'Em andamento', 'Concluído', 'Cancelado'];
-  const state = { page: 'pedidos', clients: [], orders: [], mode: localStorage.getItem(MODE_KEY) === 'cloud' ? 'cloud' : 'local', supabase: null, session: null, modal: null, registering: false, busy: false };
+  const state = { page: 'pedidos', clients: [], orders: [], mode: 'cloud', supabase: null, session: null, modal: null, registering: false, busy: false };
   const config = window.APP_CONFIG || {};
   const configured = Boolean(config.supabaseUrl && config.supabaseAnonKey);
   const money = (v) => Number(v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -74,7 +73,7 @@
   function readLocal() { try { const data = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}'); state.clients = Array.isArray(data.clients) ? data.clients : []; state.orders = Array.isArray(data.orders) ? data.orders : []; } catch { state.clients = []; state.orders = []; toast('Não foi possível ler os dados locais. Restaure um backup.'); } }
   function saveLocal() { localStorage.setItem(LOCAL_KEY, JSON.stringify({clients:state.clients,orders:state.orders})); }
   async function initCloud() {
-    if (!configured) { state.mode = 'local'; localStorage.setItem(MODE_KEY, 'local'); readLocal(); setAlert('Para ativar a nuvem, preencha config.js e execute supabase.sql. Enquanto isso, seus dados estão salvos neste navegador.'); render(); return; }
+    if (!configured) { state.clients=[]; state.orders=[]; setAlert('Supabase não configurado. Confira config.js. Nenhum dado foi modificado.'); $('auth-message').textContent = 'Não foi possível acessar o banco. Contate o administrador.'; render(); return; }
     try {
       const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
       state.supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
@@ -86,7 +85,7 @@
         if (state.mode === 'cloud') { updateMode(); if (session) setTimeout(() => loadCloud(), 0); else render(); }
       });
       if (state.session) await loadCloud(); else updateMode();
-    } catch(e) { toast(`Não foi possível conectar ao banco: ${errMsg(e)}`); state.mode = 'local'; localStorage.setItem(MODE_KEY, 'local'); readLocal(); render(); }
+    } catch(e) { state.clients=[]; state.orders=[]; setAlert('Conexão com o banco indisponível. Nenhum pedido foi salvo localmente.'); $('auth-message').textContent = `Falha na conexão com o Supabase: ${errMsg(e)}`; render(); }
   }
   async function loadCloud() {
     if (!state.supabase || !state.session || state.mode !== 'cloud') return;
@@ -98,14 +97,11 @@
     state.clients = c.data || []; state.orders = o.data || []; setAlert(''); render();
   }
   function updateMode() {
-    const cloud = state.mode === 'cloud';
-    $('storage-label').textContent = cloud ? 'Banco de dados online' : 'Armazenamento local';
-    $('storage-description').textContent = cloud ? (state.session?.user?.email || 'Entre com sua conta') : 'Dados neste navegador';
-    $('mode-btn').textContent = cloud ? '▣ Trocar armazenamento' : '☁ Configurar nuvem';
-    $('logout-btn').classList.toggle('hidden', !cloud || !state.session);
-    $('auth-screen').classList.toggle('hidden', !cloud || Boolean(state.session));
-    $('import-btn').disabled = cloud;
-    $('backup-btn').disabled = cloud && !state.session;
+    $('storage-label').textContent = 'Banco de dados online';
+    $('storage-description').textContent = state.session?.user?.email || 'Aguardando autenticação';
+    $('logout-btn').classList.toggle('hidden', !state.session);
+    $('auth-screen').classList.toggle('hidden', Boolean(state.session));
+    $('backup-btn').disabled = !state.session;
   }
   function render() {
     updateMode();
@@ -266,37 +262,6 @@
   function exportBackup() {
     download(`backup-pedidos-${today()}.json`,JSON.stringify({app:'gestor-pedidos',version:2,exported_at:new Date().toISOString(),clients:state.clients,orders:state.orders},null,2),'application/json');toast('Backup JSON salvo. Guarde em local seguro.');
   }
-  async function importBackup(file) {
-    if (!file || state.mode !== 'local') return;
-    try {
-      if (file.size > 10*1024*1024) throw Error('Arquivo maior que 10 MB.');
-      const data = JSON.parse(await file.text());
-      if (data.app !== 'gestor-pedidos' || !Array.isArray(data.clients) || !Array.isArray(data.orders)) throw Error('Arquivo de backup inválido.');
-      if (data.clients.length > 50000 || data.orders.length > 200000) throw Error('Backup grande demais para armazenamento local.');
-      const ids = new Set();
-      const clients = data.clients.map(c=>{
-        if (typeof c.id!=='string'||!c.id||typeof c.nome!=='string'||!c.nome.trim()||ids.has(c.id)) throw Error('Dados de clientes inválidos.');
-        ids.add(c.id);return {id:c.id,nome:c.nome.slice(0,160),telefone:String(c.telefone||'').slice(0,35),email:String(c.email||'').slice(0,200),created_at:String(c.created_at||new Date().toISOString())};
-      });
-      const orderIds = new Set();
-      const orders = data.orders.map(o=>{
-        if(typeof o.id!=='string'||!o.id||orderIds.has(o.id)||!ids.has(o.cliente_id)||typeof o.descricao!=='string'||!/^\d{4}-\d\d-\d\d$/.test(o.data_pedido)||!VALID_STATUS.includes(o.status)||!Number.isFinite(Number(o.valor))||Number(o.valor)<0) throw Error('Dados de pedidos inválidos.');
-        const itens = getItems(o).map(i=>({descricao:String(i.descricao || '').trim(), quantidade:Number(i.quantidade), valor_unitario:Number(i.valor_unitario)}));
-        const total = validateItems(itens);
-        orderIds.add(o.id); return {id:o.id,cliente_id:o.cliente_id,descricao:orderSummary(itens),itens,data_pedido:o.data_pedido,valor:total,status:o.status,observacoes:String(o.observacoes||'').slice(0,3000),created_at:String(o.created_at||new Date().toISOString())};
-      });
-      if (!window.confirm(`Restaurar ${clients.length} clientes e ${orders.length} pedidos? Todos os dados LOCAIS atuais serão substituídos. Faça um backup antes de continuar.`)) return;
-      localStorage.setItem(LOCAL_KEY,JSON.stringify({clients,orders})); state.clients=clients;state.orders=orders;render();toast('Backup restaurado com sucesso.');
-    } catch(e) { toast(`Falha na restauração: ${errMsg(e)}`); }
-    finally { $('import-file').value=''; }
-  }
-  async function switchMode(mode) {
-    $('cloud-backdrop').classList.add('hidden');
-    if (mode === 'cloud' && !configured) {toast('Primeiro configure a URL e a chave pública do Supabase em config.js.');return;}
-    if (mode === state.mode) {updateMode();return;}
-    state.mode=mode;localStorage.setItem(MODE_KEY,mode);setAlert('');
-    if (mode === 'local'){readLocal();render();}else if(!state.supabase){await initCloud();}else if(state.session){await loadCloud();}else{state.clients=[];state.orders=[];render();}
-  }
   function handleRowAction(e) {
     const b = e.target.closest('button[data-action]');if(!b)return;
     const {action,id} = b.dataset;
@@ -305,7 +270,6 @@
       if (!order) return toast('Pedido não encontrado.');
       const url = new URL('comprovante.html', window.location.href);
       url.searchParams.set('pedido', String(order.id));
-      if (state.mode === 'local') url.searchParams.set('local', '1');
       // O comprovante usa o login atual ou os registros locais, sem divulgar códigos do portal.
       window.open(url.href, '_blank', 'noopener');
     }
@@ -329,7 +293,7 @@
     }catch(e){$('auth-message').textContent=errMsg(e);}finally{$('auth-submit').disabled=false;}
   }
   function setup() {
-    document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{state.page=btn.dataset.page;render();document.querySelector('.sidebar').classList.remove('open');}));
+    document.querySelectorAll('button.nav-item[data-page]').forEach(btn=>btn.addEventListener('click',()=>{state.page=btn.dataset.page;render();document.querySelector('.sidebar').classList.remove('open');}));
     $('mobile-menu').addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('open'));
     $('new-btn').addEventListener('click',()=>openModal(state.page==='pedidos'?'order':'client'));
     $('empty-create-order').addEventListener('click',()=>openModal('order'));
@@ -358,21 +322,12 @@
     });
     $('modal-close').addEventListener('click',closeModal);$('modal-cancel').addEventListener('click',closeModal);
     $('modal-backdrop').addEventListener('click',(e)=>{if(e.target===$('modal-backdrop'))closeModal();});
-    document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){$('cloud-backdrop').classList.add('hidden');closeModal();}});
+    document.addEventListener('keydown',(e)=>{if(e.key==='Escape') closeModal();});
     $('export-csv').addEventListener('click',exportCSV);
     $('backup-btn').addEventListener('click',exportBackup);
-    $('import-btn').addEventListener('click',()=>{if(state.mode==='local')$('import-file').click();else toast('A restauração de backup está disponível apenas no modo local.');});
-    $('import-file').addEventListener('change',(e)=>importBackup(e.target.files[0]));
-    $('mode-btn').addEventListener('click',()=>$('cloud-backdrop').classList.remove('hidden'));
-    $('cloud-close').addEventListener('click',()=>$('cloud-backdrop').classList.add('hidden'));
-    $('cloud-backdrop').addEventListener('click',(e)=>{if(e.target===$('cloud-backdrop'))$('cloud-backdrop').classList.add('hidden');});
-    $('use-local').addEventListener('click',()=>switchMode('local'));
-    $('use-cloud').addEventListener('click',()=>switchMode('cloud'));
     $('logout-btn').addEventListener('click',async()=>{if(state.supabase)await state.supabase.auth.signOut();state.session=null;state.clients=[];state.orders=[];render();});
     $('auth-form').addEventListener('submit',authSubmit);
-    $('auth-toggle').addEventListener('click',()=>{state.registering=!state.registering;$('auth-toggle').textContent=state.registering?'Já tenho uma conta':'Criar uma conta';$('auth-submit').textContent=state.registering?'Cadastrar':'Entrar';$('auth-message').textContent='';});
-    $('auth-local').addEventListener('click',()=>switchMode('local'));
   }
   setup();
-  if(state.mode==='cloud')initCloud();else{readLocal();render();}
+  initCloud();
 })();
