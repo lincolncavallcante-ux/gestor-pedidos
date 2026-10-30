@@ -34,7 +34,12 @@
         <tbody id="items"></tbody>
       </table></div>
       <div class="total-row"><span>TOTAL DO PEDIDO</span><strong id="total"></strong></div>
-      <p class="footer-note">Este documento é um resumo da encomenda registrada na Mini Forge 64. Não é nota fiscal eletrônica (NF-e/NFC-e), não comprova pagamento e não substitui documento fiscal.</p>
+      <section class="financial-summary" aria-label="Resumo de pagamentos do pedido">
+        <div class="financial-line"><span>VALOR PAGO (REGISTRADO)</span><strong id="paid"></strong></div>
+        <div class="financial-line balance-line"><span>SALDO A PAGAR</span><strong id="balance"></strong></div>
+        <p id="payment-state" class="payment-state"></p>
+      </section>
+      <p class="footer-note">Este documento é um resumo da encomenda e dos recebimentos lançados no sistema da Mini Forge 64 até sua emissão. Não é nota fiscal (NF-e/NFC-e), não substitui documentos fiscais nem os comprovantes bancários ou do meio de pagamento. Pagamentos estornados não são contabilizados.</p>
       <footer>Mini Forge 64 · Gerado em <span id="generated"></span></footer>
     </main>
   </div>

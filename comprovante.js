@@ -12,6 +12,15 @@ const formatDate = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s)) ? new Date(s+'T12:
 const string = s => typeof s === 'string' ? s : '';
 const number = n => Number(n);
 const roundCents = n => Math.round(n * 100);
+function financialCents(rawPaid, totalCents) {
+  if (rawPaid === null || rawPaid === undefined || rawPaid === '') return null;
+  const n = Number(rawPaid);
+  if (!Number.isFinite(n) || n < 0 || !Number.isSafeInteger(roundCents(n)))
+    throw Error('Valor pago inválido. Confira os recebimentos registrados.');
+  const paidCents = roundCents(n);
+  if (paidCents > totalCents) throw Error('O valor pago supera o total do pedido. Confira os recebimentos registrados.');
+  return paidCents;
+}
 function fail(message) {
   const el = $('message'); el.textContent = message; el.classList.add('error'); el.hidden = false;
   $('receipt').hidden = true; $('print').disabled = true;
@@ -32,7 +41,7 @@ function normaliseItems(order) {
   if (result.some(i => !Number.isInteger(i.quantidade) || i.quantidade < 1 || i.quantidade > 99999 || !Number.isFinite(i.preco) || i.preco < 0 || i.preco > 999999999.99)) throw Error('Há informações inválidas nos itens do pedido.');
   return result;
 }
-function render(order, client) {
+function render(order, client, rawPaid) {
   const items = normaliseItems(order);
   const totalStored = Number(order.valor);
   if (!Number.isFinite(totalStored) || totalStored < 0) throw Error('Total do pedido inválido.');
@@ -59,6 +68,20 @@ function render(order, client) {
   $('client').textContent = string(client).slice(0,160) || 'Cliente';
   $('status').textContent = string(order.status) || '—';
   $('total').textContent = formatMoney(storedCents / 100);
+  const paidCents = financialCents(rawPaid, storedCents);
+  if (paidCents === null) {
+    $('paid').textContent = '—';
+    $('balance').textContent = '—';
+    $('payment-state').textContent = 'Informações de pagamento não disponíveis neste modo de armazenamento.';
+  } else {
+    $('paid').textContent = formatMoney(paidCents / 100);
+    $('balance').textContent = formatMoney((storedCents - paidCents) / 100);
+    $('payment-state').textContent = paidCents === storedCents
+      ? 'Situação financeira: quitado conforme lançamentos registrados.'
+      : paidCents > 0
+        ? 'Situação financeira: pagamento parcial registrado.'
+        : 'Situação financeira: nenhum pagamento registrado.';
+  }
   $('generated').textContent = new Date().toLocaleString('pt-BR');
   $('message').hidden = true;
   $('receipt').hidden = false;
@@ -79,7 +102,9 @@ async function load() {
       if (!data) return fail('Link de acesso expirado ou revogado.');
       const found = (Array.isArray(data.pedidos) ? data.pedidos : []).find(x => x.id === pedidoId);
       if (!found) return fail('Este pedido não está disponível para esse cliente.');
-      return render(found, data.primeiro_nome);
+      if (!Object.prototype.hasOwnProperty.call(found, 'valor_pago'))
+        return fail('A atualização do financeiro do Portal do Cliente ainda não foi aplicada no Supabase. Entre em contato com a loja.');
+      return render(found, data.primeiro_nome, found.valor_pago);
     }
     // Administrador em modo local: mesmos dados já mantidos no próprio navegador.
     if (query.get('local') === '1') {
@@ -88,7 +113,7 @@ async function load() {
       const order = (storage.orders || []).find(x => x.id === pedidoId);
       const client = (storage.clients || []).find(x => x.id === order?.cliente_id);
       if (!order) return fail('Pedido não encontrado no navegador.');
-      return render(order, client?.nome);
+      return render(order, client?.nome, null);
     }
     // Administrador em nuvem: sessão normal + políticas RLS do Supabase.
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return fail('Conexão com a nuvem indisponível.');
@@ -99,10 +124,29 @@ async function load() {
     if (orderError || !order) return fail('Pedido não encontrado na sua conta.');
     const {data:client,error:clientError} = await sb.from('clientes').select('nome').eq('id',order.cliente_id).single();
     if (clientError || !client) return fail('Cliente do pedido não encontrado.');
-    render(order, client.nome);
+    // Consulta SOMENTE os recebimentos do usuário autenticado e deste pedido.
+    // Políticas RLS do Supabase permanecem ativas na tabela recebimentos.
+    const {data:receipts,error:receiptsError} = await sb.from('recebimentos')
+      .select('valor')
+      .eq('pedido_id', pedidoId)
+      .eq('user_id', authData.session.user.id)
+      .is('estornado_em', null);
+    if (receiptsError) throw receiptsError;
+    if (!Array.isArray(receipts)) throw Error('Resposta inválida do módulo financeiro.');
+    let paidCents = 0;
+    for (const receipt of receipts) {
+      const value = Number(receipt.valor);
+      if (!Number.isFinite(value) || value < 0) throw Error('Recebimento inválido.');
+      paidCents += roundCents(value);
+      if (!Number.isSafeInteger(paidCents)) throw Error('Total de recebimentos inválido.');
+    }
+    render(order, client.nome, paidCents / 100);
   } catch (err) {
     console.error('Não foi possível montar comprovante:', err?.code || err?.name || 'erro');
-    fail(err?.message?.startsWith('O total do pedido') ? err.message : 'Não foi possível consultar este pedido. Confira sua conexão e tente novamente.');
+    const msg = String(err?.message || '');
+    fail(/^(O total do pedido|O valor pago supera|Valor pago inválido)/.test(msg)
+      ? msg
+      : 'Não foi possível consultar o valor pago deste pedido. Confira o acesso ao Financeiro e tente novamente.');
   }
 }
 $('print').addEventListener('click', () => window.print());
