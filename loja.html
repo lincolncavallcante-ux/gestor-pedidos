@@ -2,23 +2,26 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101014"><meta name="description" content="Mini Forge 64 — miniaturas e acessórios. Encomende pelo site e confirme o pagamento por WhatsApp.">
-  <title>Mini Forge 64 | Miniaturas e encomendas</title>
-  <link rel="stylesheet" href="loja.css?v=1">
-  <script defer src="config.js"></script><script type="module" src="loja.js?v=1"></script>
+  <meta name="theme-color" content="#f8f8f6"><meta name="description" content="Mini Forge 64 — miniaturas e acessórios. Explore as fotos e encomende pelo WhatsApp.">
+  <title>Mini Forge 64 | Catálogo de miniaturas</title>
+  <link rel="stylesheet" href="loja.css?v=2">
+  <script defer src="config.js"></script><script type="module" src="loja.js?v=2"></script>
 </head>
 <body>
   <header class="site-header">
     <a href="loja.html" class="site-brand"><img src="assets/logo-mini-forge64.jpg" alt="Mini Forge 64" width="52" height="52"><span><strong>MINI FORGE 64</strong><small>MINIATURAS & PERSONALIZAÇÃO</small></span></a>
-    <div class="header-actions"><a href="#como-funciona" class="how-link">Como comprar</a><button id="open-cart" class="cart-trigger" type="button">🛒 Carrinho <span id="cart-count">0</span></button></div>
+    <div class="header-actions"><a href="#como-funciona" class="how-link">Como comprar</a><button id="open-cart" class="cart-trigger" type="button">Carrinho <span id="cart-count">0</span></button></div>
   </header>
   <main>
-    <section class="hero">
-      <div class="hero-copy"><span class="eyebrow">PEQUENOS DETALHES. GRANDES HISTÓRIAS.</span><h1>Sua coleção merece algo <em>único.</em></h1><p>Miniaturas, personagens e acessórios para seus dioramas. Escolha seus itens e faça sua encomenda sem sair de casa.</p><a href="#catalogo" class="primary-link">Explorar catálogo <span>↓</span></a><div class="hero-note">Pedido pelo site · Pagamento combinado no WhatsApp</div></div>
-      <div class="hero-art"><img src="assets/logo-mini-forge64.jpg" alt="Emblema Mini Forge 64"><span>ARTE EM MINIATURA</span></div>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy"><span class="eyebrow">MINI FORGE 64 · CATÁLOGO</span><h1 id="hero-title">Miniaturas com <em>personalidade.</em></h1>
+      <p>Peças, personagens e acessórios para coleções e dioramas. Explore o catálogo, veja cada detalhe e encomende suas favoritas.</p>
+      <a href="#catalogo" class="primary-link">Explorar produtos <span aria-hidden="true">↓</span></a>
+      <p class="hero-note">Escolha no site · Confirme o pedido e o pagamento pelo WhatsApp</p></div>
+      <div class="hero-signature" aria-hidden="true"><span>MINI<br>FORGE<br><b>64</b></span><small>FEITO EM PEQUENA ESCALA</small></div>
     </section>
     <section class="catalog-section" id="catalogo">
-      <div class="section-header"><div><span class="eyebrow">CATÁLOGO</span><h2>Encontre sua próxima peça</h2><p>Escolha seus produtos e adicione tudo ao mesmo pedido.</p></div><span id="catalog-count" class="count">Carregando...</span></div>
+      <div class="section-header"><div><span class="eyebrow">CATÁLOGO</span><h2>Explore a coleção</h2><p>Clique em uma miniatura para ampliar as fotos, conferir informações e adicionar ao carrinho.</p></div><span id="catalog-count" class="count">Carregando...</span></div>
       <div id="store-notice" class="notice" role="status">Carregando catálogo...</div>
       <div class="catalog-filters"><input id="search" type="search" placeholder="Buscar miniatura, acessório..." aria-label="Buscar produto"><select id="category" aria-label="Categoria"><option value="">Todas as categorias</option></select></div>
       <div id="products" class="products-grid"></div>
@@ -27,6 +30,22 @@
     <section id="como-funciona" class="steps"><span class="eyebrow">COMO FUNCIONA</span><h2>Simples do começo ao fim</h2><div class="steps-grid"><article><b>01</b><h3>Escolha seus itens</h3><p>Navegue pelo catálogo e adicione as miniaturas ao carrinho.</p></article><article><b>02</b><h3>Envie seu pedido</h3><p>Informe seus dados e registre sua encomenda com segurança.</p></article><article><b>03</b><h3>Confirme pelo WhatsApp</h3><p>Combine a disponibilidade, a entrega e o pagamento com a loja.</p></article></div></section>
   </main>
   <footer><strong>MINI FORGE 64</strong><span>Miniaturas e encomendas personalizadas · 2026</span><span>O pedido não representa confirmação de pagamento.</span></footer>
+  <!-- Detalhes: fotos ampliáveis, descrição e opção de compra -->
+  <div id="detail-backdrop" class="modal-backdrop hidden" role="presentation">
+    <section id="detail-modal" class="product-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <button id="close-detail" type="button" class="detail-close icon-button" aria-label="Fechar detalhes">×</button>
+      <div class="detail-gallery"><button id="detail-photo" type="button" class="detail-main" aria-label="Ampliar foto do produto"><img id="detail-img" alt="Foto do produto"><span>Ampliar foto ⤢</span></button><div id="detail-thumbs" class="detail-thumbs" aria-label="Fotos disponíveis"></div></div>
+      <div class="detail-copy"><span id="detail-category" class="eyebrow"></span><h2 id="detail-title"></h2><p id="detail-description"></p><strong id="detail-price" class="detail-price"></strong><p class="detail-policy">Entrega, disponibilidade e pagamento são confirmados pelo WhatsApp.</p><button id="detail-add" type="button" class="button-primary">Adicionar ao carrinho</button></div>
+    </section>
+  </div>
+  <!-- Visualização em tamanho grande -->
+  <div id="zoom-backdrop" class="zoom-backdrop hidden" role="dialog" aria-modal="true" aria-label="Foto ampliada">
+    <button id="zoom-close" class="zoom-close" type="button" aria-label="Fechar imagem">×</button>
+    <button id="zoom-prev" class="zoom-control" type="button" aria-label="Foto anterior">‹</button>
+    <img id="zoom-image" alt="Imagem ampliada da miniatura">
+    <button id="zoom-next" class="zoom-control" type="button" aria-label="Próxima foto">›</button>
+    <div id="zoom-count" class="zoom-count"></div>
+  </div>
   <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
   <aside id="cart-drawer" class="cart-drawer hidden" role="dialog" aria-modal="true" aria-labelledby="cart-title">
     <div class="drawer-heading"><div><span class="eyebrow">SEU PEDIDO</span><h2 id="cart-title">Meu carrinho</h2></div><button id="close-cart" class="icon-button" aria-label="Fechar carrinho" type="button">×</button></div>
