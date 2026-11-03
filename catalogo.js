@@ -17,9 +17,17 @@ function renderPhotoEditor(){
  $('photos-preview').innerHTML=photoEntries.length?photoEntries.map((entry,i)=>{
   const url=entry.type==='file'?(objectUrls.push(URL.createObjectURL(entry.file)),objectUrls.at(-1)):entry.url;
   return `<div class="preview-tile"><img src="${esc(url)}" alt="Foto ${i+1} do produto"><span class="cover-indicator">${i===0?'★ Foto principal':`Foto ${i+1}`}</span><div class="preview-buttons"><button type="button" data-cover="${i}" ${i===0?'disabled':''}>Usar como capa</button><button type="button" data-remove-photo="${i}" aria-label="Remover foto ${i+1}">Remover</button></div></div>`
- }).join(''):'<div class="preview-empty">Nenhuma foto selecionada</div>';
+ }).join(''):'<div class="preview-empty">Nenhuma foto selecionada. Você pode acrescentar até 6 fotos.</div>';
+ const count=photoEntries.length;
+ $('photo-counter').textContent=`${count} de 6 fotos`;
+ $('photo-counter').classList.toggle('at-limit', count>=6);
+ $('choose-photos').disabled=count>=6;
+ $('choose-photos').textContent=count>=6?'Limite de 6 fotos atingido':count?'+ Adicionar mais fotos':'+ Adicionar fotos';
 }
-function insertPhoto(entry){if(photoEntries.length>=6){showError('Limite de 6 fotos por produto.');return false}photoEntries.push(entry);renderPhotoEditor();return true}
+function insertPhoto(entry){
+ if(photoEntries.length>=6){showError('Limite de 6 fotos por produto. Remova uma foto para adicionar outra.');return false}
+ photoEntries.push(entry);renderPhotoEditor();return true;
+}
 function message(msg,bad=false){$('warning').textContent=msg;$('warning').classList.remove('hidden');$('warning').classList.toggle('error',bad)}
 function toast(msg){$('toast').textContent=msg;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),3800)}
 async function init(){
@@ -47,12 +55,32 @@ function showForm(product=null){
  photoEntries=safePhotos(product).map(url=>({type:'url',url}));$('form-error').classList.add('hidden');renderPhotoEditor();$('product-overlay').classList.remove('hidden');
 }
 function closeForm(){$('product-overlay').classList.add('hidden');clearTempUrls()}
+$('choose-photos').addEventListener('click',()=>{
+ $('form-error').classList.add('hidden');
+ $('product-file').click();
+});
 $('product-file').addEventListener('change',e=>{
- for(const file of [...e.target.files]){
-  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>3*1024*1024){showError(`Foto inválida: ${file.name}. Use JPG, PNG ou WebP até 3 MB.`);continue}
-  if(!insertPhoto({type:'file',file}))break;
- }
+ const chosen=Array.from(e.target.files||[]);
+ // Permite selecionar uma foto por vez ou muitas na mesma seleção.
+ // A seleção anterior é guardada em photoEntries, não no input.
  e.target.value='';
+ if(!chosen.length)return;
+ const problems=[];
+ let added=0;
+ for(const file of chosen){
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)){
+   problems.push(`${file.name}: use JPG, PNG ou WebP.`);continue;
+  }
+  if(file.size>3*1024*1024){problems.push(`${file.name}: arquivo maior que 3 MB.`);continue;}
+  if(photoEntries.length>=6){problems.push('Limite de 6 fotos atingido.');break;}
+  if(photoEntries.some(p=>p.type==='file'&&p.file.name===file.name&&p.file.size===file.size&&p.file.lastModified===file.lastModified)){
+   problems.push(`${file.name}: foto já adicionada.`);continue;
+  }
+  photoEntries.push({type:'file',file});added++;
+ }
+ renderPhotoEditor();
+ if(problems.length)showError(problems.join(' '));
+ else if(added)$('form-error').classList.add('hidden');
 });
 $('photos-preview').addEventListener('click',e=>{
  const move=e.target.closest('[data-cover]');if(move){const i=Number(move.dataset.cover);photoEntries.unshift(photoEntries.splice(i,1)[0]);renderPhotoEditor();return}
@@ -79,21 +107,31 @@ $('product-form').addEventListener('submit',async e=>{
  if(!nome||!categoria||!Number.isFinite(preco)||preco<0||preco>100000){showError('Confira nome, categoria e preço do produto.');return}
  if(!photoEntries.length){showError('Adicione pelo menos uma foto do produto.');return}
  busy=true;$('save-product').disabled=true;$('save-product').textContent='Salvando fotos e produto...';$('form-error').classList.add('hidden');
- const uploaded=[];
+ const uploaded=[];let persisted=false;
  try{
   const fotos=[];
   for(const entry of photoEntries){
    if(entry.type==='url'){fotos.push(entry.url);continue}
    const file=entry.file,ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg',path=`${user.id}/${crypto.randomUUID()}.${ext}`;
-   const {error}=await db.storage.from('mf64-produtos').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;
+   const {error}=await db.storage.from('mf64-produtos').upload(path,file,{contentType:file.type,upsert:false});if(error)throw new Error(`Falha ao enviar ${file.name}: ${error.message}`);
    uploaded.push(path);fotos.push(db.storage.from('mf64-produtos').getPublicUrl(path).data.publicUrl);
   }
   const body={user_id:user.id,nome,categoria,descricao:$('product-description').value.trim(),preco,imagem_url:fotos[0],fotos,ativo:$('product-active').checked};
   const id=$('product-id').value;
   const {error}=await (id?db.from('mf64_produtos').update(body).eq('id',id).eq('user_id',user.id):db.from('mf64_produtos').insert(body));
-  if(error)throw error;
-  closeForm();await loadProducts();toast('Produto e fotos salvos com sucesso!');
- }catch(err){if(uploaded.length){await db.storage.from('mf64-produtos').remove(uploaded).catch(()=>{})}showError(err?.message||'Não foi possível salvar o produto.')}
+  if(error){
+   const msg=String(error.message||'');
+   if(/fotos|schema cache|column/i.test(msg))throw new Error('O Supabase ainda não reconhece a coluna de várias fotos. Execute o arquivo VERIFICAR_OU_ATUALIZAR_FOTOS.sql no SQL Editor. Detalhe: '+msg);
+   throw error;
+  }
+  persisted=true;
+  closeForm();
+  try{await loadProducts();toast(`Produto salvo com ${fotos.length} foto(s)!`)}
+  catch(refreshError){toast('Produto salvo; atualize a página para ver a lista.');console.error(refreshError)}
+ }catch(err){
+  if(!persisted&&uploaded.length){await db.storage.from('mf64-produtos').remove(uploaded).catch(()=>{})}
+  showError(err?.message||'Não foi possível salvar o produto.');console.error(err);
+ }
  finally{busy=false;$('save-product').disabled=false;$('save-product').textContent='Salvar produto'}
 });
 function showError(t){$('form-error').textContent=t;$('form-error').classList.remove('hidden')}
