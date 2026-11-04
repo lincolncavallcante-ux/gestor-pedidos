@@ -1,0 +1,48 @@
+/* Mini Forge 64 - avisos discretos de pedidos da loja. Independente de styles.css. */
+.mf64-novo-badge {
+  display: inline-flex;
+  margin-left: auto;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0 .35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 99px;
+  background: #f5bd42;
+  color: #102a47;
+  font: 700 12px/1 system-ui, sans-serif;
+}
+.mf64-novos-painel {
+  margin: 0 0 18px;
+  padding: 18px 20px;
+  border: 1px solid #dbe5ec;
+  border-left: 4px solid #e6b23e;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(11, 37, 69, .04);
+  color: #102a47;
+}
+.mf64-novos-painel[hidden], .mf64-novo-badge[hidden] {display:none !important;}
+.mf64-novos-topo { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+.mf64-novos-titulo {display:flex;align-items:center;gap:10px;font-size:16px;font-weight:750;}
+.mf64-novos-titulo .mf64-icone {font-size:18px;line-height:1;}
+.mf64-novos-ajuda {margin:5px 0 0;color:#597188;font-size:12px;line-height:1.5;}
+.mf64-novos-acoes {display:flex;gap:8px;flex-wrap:wrap;}
+.mf64-novos-botao {border:1px solid #cfdae5;border-radius:9px;background:#fff;color:#0b2545;cursor:pointer;padding:8px 12px;font:650 12px/1.4 system-ui,sans-serif;}
+.mf64-novos-botao:hover {background:#f2f6f9;}
+.mf64-novos-botao:focus-visible {outline:3px solid #8fb8dc;outline-offset:2px;}
+.mf64-novos-botao:disabled {opacity:.55;cursor:wait;}
+.mf64-novos-lista {padding:0;margin:12px 0 0;list-style:none;border-top:1px solid #eaf0f5;}
+.mf64-novos-item {display:flex;gap:10px;justify-content:space-between;align-items:center;border-bottom:1px solid #edf1f5;padding:10px 0;}
+.mf64-novos-item:last-child {border-bottom:none;padding-bottom:0;}
+.mf64-novos-cliente {font-weight:700;font-size:13px;}
+.mf64-novos-info {font-size:12px;color:#5c7184;margin-top:3px;}
+.mf64-novos-abertura {white-space:nowrap;}
+.mf64-novos-erro {color:#a63b25;font-size:12px;margin:10px 0 0;}
+.mf64-avisos-toast {position:fixed;right:20px;bottom:20px;z-index:1000;background:#0b2545;color:white;border-radius:12px;box-shadow:0 8px 24px #0002;padding:13px 16px;max-width:min(360px,calc(100vw - 40px));font:500 13px/1.5 system-ui,sans-serif;}
+@media (max-width:620px) {
+ .mf64-novos-painel {padding:15px 14px;}
+ .mf64-novos-item {align-items:flex-start;flex-direction:column;}
+ .mf64-novos-acoes {width:100%;}
+ .mf64-novos-botao {min-height:38px;}
+}
