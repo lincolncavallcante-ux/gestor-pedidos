@@ -1,0 +1,5 @@
+.mf64-stock-box{border:1px solid #e0e6ed;background:#f7f9fa;border-radius:11px;padding:14px;display:grid;gap:12px}
+.mf64-stock-box legend{font-size:13px;font-weight:850;color:#213a50;padding:0 5px}
+.mf64-stock-box .mf64-stock-inputs[hidden]{display:none}
+.mf64-stock-summary{padding:10px 14px;margin-bottom:16px;border-radius:8px;color:#3f6a57;background:#eaf6ef;font-size:12px}
+.mf64-stock-summary.low{color:#985f22;background:#fff0d9}
