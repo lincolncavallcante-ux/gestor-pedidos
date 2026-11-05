@@ -1,4 +1,4 @@
-/* SuperFrete v6 - componente aditivo; não altera layout da loja v3/v4/v5 */
+/* SuperFrete v7 - componente aditivo; não altera layout da loja v3/v4/v5 */
 #mf64-frete {margin:16px 0; padding:15px; border:1px solid #d9d6d0; border-radius:14px; background:#faf9f7; color:#292723;}
 #mf64-frete h3 {font-size:1rem;line-height:1.4;margin:0 0 6px;}
 #mf64-frete p {margin:4px 0 12px;font-size:.82rem;line-height:1.45;color:#67625b;}
@@ -16,3 +16,32 @@
 #mf64-frete .mf64-frete-note {font-size:.75rem;margin:10px 0 0;}
 #mf64-frete .mf64-frete-error {color:#a13127;font-weight:500;}
 @media(max-width:360px){#mf64-frete .mf64-frete-form{flex-wrap:wrap;}#mf64-frete .mf64-frete-form button{width:100%;}}
+
+/* V7: logotipos das transportadoras e cartões de cotação responsivos. */
+#mf64-frete .mf64-frete-results-title {display:block;margin:4px 0 12px;font-size:.91rem;}
+#mf64-frete .mf64-frete-choice {position:relative;gap:11px;min-height:67px;padding:11px 12px;margin-top:9px;border-radius:12px;}
+#mf64-frete .mf64-frete-best {border-color:#88d9ad;padding-top:16px;}
+#mf64-frete .mf64-frete-best-tag {position:absolute;right:0;top:-11px;background:#d6ffe8;color:#0d6839;border:1px solid #9be3bc;border-radius:5px;padding:3px 8px;font-size:.68rem;font-weight:700;line-height:1.4;}
+#mf64-frete .mf64-frete-choice input[type="radio"] {width:18px;height:18px;flex:0 0 18px;accent-color:#202a2f;margin:0;}
+#mf64-frete .mf64-frete-logo {display:flex;align-items:center;justify-content:center;flex:0 0 82px;width:82px;height:42px;overflow:hidden;}
+#mf64-frete .mf64-frete-logo img {display:block;width:100%;max-width:80px;height:36px;object-fit:contain;}
+#mf64-frete .mf64-frete-logo-fallback {display:none;font-size:.72rem;font-weight:800;color:#324a57;}
+#mf64-frete .mf64-frete-no-logo img {display:none;}
+#mf64-frete .mf64-frete-no-logo .mf64-frete-logo-fallback,
+#mf64-frete .mf64-frete-logo-unknown .mf64-frete-logo-fallback {display:block;}
+#mf64-frete .mf64-frete-service {display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;overflow-wrap:anywhere;}
+#mf64-frete .mf64-frete-service strong {font-size:.8rem;font-weight:650;line-height:1.25;}
+#mf64-frete .mf64-frete-service small {font-size:.71rem;margin:0;color:#786f67;line-height:1.35;}
+#mf64-frete .mf64-frete-price {color:#07884c;font-size:.9rem;font-weight:750;white-space:nowrap;margin-left:auto;}
+@media (max-width:445px) {
+  #mf64-frete .mf64-frete-choice {gap:7px;padding:10px 8px;}
+  #mf64-frete .mf64-frete-logo {width:64px;flex-basis:64px;}
+  #mf64-frete .mf64-frete-logo img {max-width:63px;height:31px;}
+  #mf64-frete .mf64-frete-price {font-size:.82rem;}
+}
+@media (max-width:360px) {
+  #mf64-frete .mf64-frete-logo {width:48px;flex-basis:48px;}
+  #mf64-frete .mf64-frete-logo img {max-width:47px;height:26px;}
+  #mf64-frete .mf64-frete-service strong {font-size:.74rem;}
+  #mf64-frete .mf64-frete-service small {font-size:.67rem;}
+}

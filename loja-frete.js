@@ -1,8 +1,8 @@
-// SuperFrete v6 - apenas simula frete; não altera o valor dos pedidos no Supabase.
+// SuperFrete v7 - logotipos oficiais + CEP de origem atualizado; apenas simula frete.
 (() => {
   'use strict';
   const byId = id => document.getElementById(id);
-  const originCep = '87020-220';
+  const originCep = '87114-091';
   const formatBRL = n => Number(n).toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
   const strip = value => String(value || '').replace(/\D/g, '').slice(0,8);
   const escapeHtml = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -12,6 +12,50 @@
   let lastCep = '';
   let requestCounter = 0;
   const key = 'mf64:frete-simulado:';
+  // Logotipos hospedados nos sites oficiais das transportadoras.
+  // Se a imagem não carregar, o nome da empresa permanece visível.
+  const carrierData = Object.freeze({
+    correios: { name: 'Correios', logo: 'https://www.correios.com.br/@@site-logo/correios.svg' },
+    jadlog: { name: 'Jadlog', logo: 'https://www.jadlog.com.br/portalcliente/images/logo_home.png' },
+    loggi: { name: 'Loggi', logo: 'https://ajuda.loggi.com/hc/theming_assets/01KKD9JHZTKN51ACA8RQYGRFQ8' }
+  });
+  function carrierKey(option) {
+    const descriptor = String(option.carrier || '') + ' ' + String(option.service || '');
+    const name = descriptor.toLowerCase();
+    if (name.includes('jadlog')) return 'jadlog';
+    if (name.includes('loggi')) return 'loggi';
+    if (name.includes('correios') || /\b(pac|sedex)\b/i.test(descriptor)) return 'correios';
+    return '';
+  }
+  function renderService(option, index) {
+    const carrier = carrierData[carrierKey(option)];
+    const service = String(option.service || 'Entrega').trim();
+    const companyName = carrier?.name || String(option.carrier || 'Transportadora');
+    // Ex.: Jadlog.Package passa a "Package" (Jadlog já aparece no logotipo).
+    const serviceLabel = companyName === 'Jadlog' ? service.replace(/^jadlog[.\s-]*/i, '') || 'Package' : service;
+    const prazo = Number(option.deliveryDays);
+    const labelPrazo = option.deliveryDays !== null && option.deliveryDays !== undefined && Number.isFinite(prazo)
+      ? `Até ${prazo} ${prazo === 1 ? 'dia útil' : 'dias úteis'}`
+      : 'Prazo a confirmar';
+    const logo = carrier
+      ? `<span class="mf64-frete-logo"><img src="${carrier.logo}" alt="${escapeHtml(companyName)}" loading="lazy"><span class="mf64-frete-logo-fallback">${escapeHtml(companyName)}</span></span>`
+      : `<span class="mf64-frete-logo mf64-frete-logo-unknown"><span class="mf64-frete-logo-fallback">${escapeHtml(companyName)}</span></span>`;
+    return `<label class="mf64-frete-choice${index === 0 ? ' mf64-frete-best' : ''}">
+      <input type="radio" name="mf64-frete-opcao" value="${index}">
+      ${logo}
+      <span class="mf64-frete-service"><strong>${escapeHtml(serviceLabel)}</strong><small>${labelPrazo}</small></span>
+      <span class="mf64-frete-price">${formatBRL(option.price)}</span>
+      ${index === 0 ? '<span class="mf64-frete-best-tag">Melhor preço</span>' : ''}
+    </label>`;
+  }
+  function attachLogoFallbacks(results) {
+    results.querySelectorAll('.mf64-frete-logo img').forEach(img => {
+      const fail = () => img.closest('.mf64-frete-logo')?.classList.add('mf64-frete-no-logo');
+      img.addEventListener('error', fail, { once: true });
+      if (img.complete && img.naturalWidth === 0) fail();
+    });
+  }
+
 
   function init() {
     const bottom = document.querySelector('#cart-drawer .drawer-bottom');
@@ -69,7 +113,10 @@
         lastCep=cep;
         if(!opts.length){results.textContent='Sem cotação disponível para este CEP e embalagem. Confirme o frete pelo WhatsApp.';return}
         quote = { cep, options:opts, selectedId:null, createdAt:Date.now() };
-        results.innerHTML='<strong>Opções estimadas de envio</strong>' + opts.map((o,i)=>`<label class="mf64-frete-choice"><input type="radio" name="mf64-frete-opcao" value="${i}"><span class="mf64-frete-service">${escapeHtml(o.service)}${o.carrier?' · '+escapeHtml(o.carrier):''}<small>${Number.isFinite(o.deliveryDays)&&o.deliveryDays!==null?`${o.deliveryDays} dia(s) estimados`:'Prazo a confirmar'}</small></span><span class="mf64-frete-price">${formatBRL(o.price)}</span></label>`).join('')+'<p class="mf64-frete-note">Selecione uma opção, se desejar registrá-la como referência nas observações do pedido.</p>';
+        results.innerHTML = '<strong class="mf64-frete-results-title">Compare as opções de envio</strong>'
+          + opts.map(renderService).join('')
+          + '<p class="mf64-frete-note">Selecione uma opção para registrar a estimativa nas observações do pedido.</p>';
+        attachLogoFallbacks(results);
       } catch (err) {
         if(counter===requestCounter) results.innerHTML = `<span class="mf64-frete-error">${escapeHtml(err.message || 'Não foi possível consultar o frete.')}</span>`;
       } finally {
