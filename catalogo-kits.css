@@ -1,0 +1,9 @@
+/* Administração de coleções — Mini Forge 64 */
+.mf64-kit-admin{border:1px solid #dce5e4;border-radius:12px;padding:16px;margin:8px 0;background:#f8faf9;min-width:0}
+.mf64-kit-admin legend{color:#273a43;font-size:13px;font-weight:800;padding:0 7px}
+#mf64-kit-fields[hidden]{display:none!important}
+#mf64-kit-fields{display:grid;gap:12px;margin-top:12px}
+#mf64-kit-fields label{display:grid;gap:7px;color:#24313c;font-size:13px;font-weight:700}
+#mf64-kit-fields input,#mf64-kit-fields textarea{width:100%;min-width:0;border:1px solid #ccd6d5;border-radius:9px;padding:11px;font:inherit;background:white}
+#mf64-kit-fields .help{font-size:12px;line-height:1.55;margin:0;color:#5b686a}
+.mf64-kit-list-label{display:block;color:#59646a;font-size:11px;line-height:1.6;margin-top:4px}

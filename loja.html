@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="loja.css?v=2">
   <link rel="stylesheet" href="loja-mobile.css?v=3">
   <link rel="stylesheet" href="loja-v4.css?v=4">
+  <link rel="stylesheet" href="loja-kits.css?v=1">
   <script defer src="config.js"></script>
-  <script type="module" src="loja.js?v=4"></script>
+  <script type="module" src="loja.js?v=5"></script>
   <script defer src="loja-mobile.js?v=3"></script>
   <script defer src="loja-personalizado.js?v=4"></script>
 </head>
@@ -42,7 +43,7 @@
     <section id="detail-modal" class="product-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
       <button id="close-detail" type="button" class="detail-close icon-button" aria-label="Fechar detalhes">×</button>
       <div class="detail-gallery"><button id="detail-photo" type="button" class="detail-main" aria-label="Ampliar foto do produto"><img id="detail-img" alt="Foto do produto"><span>Ampliar foto ⤢</span></button><div id="detail-thumbs" class="detail-thumbs" aria-label="Fotos disponíveis"></div></div>
-      <div class="detail-copy"><span id="detail-category" class="eyebrow"></span><h2 id="detail-title"></h2><p id="detail-description"></p><strong id="detail-price" class="detail-price"></strong><span id="detail-stock" class="mf64-stock-label"></span><button id="detail-share" type="button" class="mf64-share mf64-share-detail">Compartilhar produto ↗</button><p class="detail-policy">Entrega, disponibilidade e pagamento são confirmados pelo WhatsApp.</p><button id="detail-add" type="button" class="button-primary">Adicionar ao carrinho</button></div>
+      <div class="detail-copy"><span id="detail-category" class="eyebrow"></span><h2 id="detail-title"></h2><p id="detail-description"></p><div id="mf64-kit-options" class="mf64-kit-options hidden" aria-label="Seleção de personagens"></div><strong id="detail-price" class="detail-price"></strong><span id="detail-stock" class="mf64-stock-label"></span><button id="detail-share" type="button" class="mf64-share mf64-share-detail">Compartilhar produto ↗</button><p class="detail-policy">Entrega, disponibilidade e pagamento são confirmados pelo WhatsApp.</p><button id="detail-add" type="button" class="button-primary">Adicionar ao carrinho</button></div>
     </section>
   </div>
   <!-- Visualização em tamanho grande -->
